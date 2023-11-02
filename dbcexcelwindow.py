@@ -207,14 +207,3 @@ class DbcWindow(QMainWindow):
         else:
             self.output_label.setText("Please select the appropriate files to convert")
 
-
-def run_main():
-    """Runs the main file"""
-    app = QApplication(sys.argv)
-    window = DbcWindow()
-    window.show()
-    sys.exit(app.exec_())
-
-
-if __name__ == "__main__":
-    run_main()
