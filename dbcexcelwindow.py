@@ -1,32 +1,39 @@
-from dbcexcellogic import DbcExcelLogic
+"""DBC-EXCEL WINDOW
+This module defines the DBC-EXCEL Window class for handling buttons in a PyQt5 GUI.
+"""
 import sys
-from PyQt5.QtWidgets import (
+from PyQt5.QtWidgets import (  # pylint: disable=no-name-in-module
     QMainWindow,
     QApplication,
     QPushButton,
-    QFileDialog,
     QLabel,
     QVBoxLayout,
     QHBoxLayout,
     QWidget,
     QComboBox,
     QScrollArea,
+    QMessageBox,
 )
-from PyQt5.QtGui import QIcon
-from PyQt5.QtCore import Qt
+from PyQt5.QtGui import QIcon   # pylint: disable=no-name-in-module
+from PyQt5.QtCore import Qt # pylint: disable=no-name-in-module
+from dbcexcellogic import DbcExcelLogic
 
 
 class DbcWindow(QMainWindow):
+    """Responsible for managing buttons and mapping Excel column numbers to DBC parameters."""
+
     def __init__(self):
         super().__init__()
+
         self.setWindowTitle("Excel to DBC Converter")
         self.setGeometry(500, 300, 800, 500)
         self.setWindowIcon(
             QIcon(r"C:\Users\Pardhasaradhi\Desktop\icons\fotor-ai-2023100610743.jpg")
         )
         self.dbcexcellogic = DbcExcelLogic()
-
-        output_excel_file = None
+        self.dbcexcellogic.exception_occurred.connect(  # pylint: disable=no-member
+            self.handle_exception
+        )
         self.selected_file_path = ""
         self.column_mappings = {}  # To store user-defined mappings
 
@@ -55,8 +62,7 @@ class DbcWindow(QMainWindow):
         selected_output_layout.addWidget(self.selected_file_label)
 
         self.mapped_label = QLabel(
-            "Map the EXCEL column index to the Alphabet to your right box"
-        )
+            "Map the parameters to the corresponding column indexes,like in the Excel file.")
         selected_output_layout.addWidget(self.mapped_label)
         self.mapped_label.setStyleSheet(
             "font-weight: bold; font-size: 14px; color: red;"
@@ -75,7 +81,9 @@ class DbcWindow(QMainWindow):
 
         main_layout.addLayout(left_side_layout, 3)
 
-        # Right-side layout with alphabet buttons and combo boxes in a scrollable area
+        # Right-side layout with alphabet/column indexes buttons and combo boxes in a scrolable area
+        # Alphabet = column index
+
         alphabet_scroll_area = QScrollArea()
         alphabet_scroll_area.setWidgetResizable(True)
         alphabet_widget = QWidget()
@@ -84,7 +92,7 @@ class DbcWindow(QMainWindow):
         alphabet_buttons = [str(i) for i in range(16)]
 
         alphabet_index_label = QLabel(
-            "Map the DBC parameters\n to Excel Column Indexes"
+            "Map the DBC parameters\n to Excel Column Indexes\n"
         )
         alphabet_index_label.setAlignment(Qt.AlignCenter)
         alphabet_layout.addWidget(alphabet_index_label)
@@ -138,7 +146,19 @@ class DbcWindow(QMainWindow):
 
         main_layout.addLayout(right_side_layout, 1)
 
+    def handle_exception(self, exception):
+        """slot (function) to handle exceptions"""
+        error_message = (
+            f"Error: {str(exception)}\nPlease ensure your Excel file contains all the required parameters in separate columns "
+            f"and that you have correctly mapped these parameters to the corresponding column indexes in the Excel file."
+            f"\n\nFor example, if the 'CAN ID' is in column index 2, make sure you have mapped it accordingly in the same way."
+            f"\nColumn indexes are always start from 0 in your Excel"
+        )
+
+        QMessageBox.critical(self, "Error", error_message)
+
     def open_excel_to_dbc(self):
+        """Enabling the combo boxes, opens the Filedialog and selects the file"""
         for combo_box in self.column_name_boxes.values():
             combo_box.setEnabled(True)
 
@@ -148,21 +168,24 @@ class DbcWindow(QMainWindow):
         self.convert_button.setEnabled(True)
 
     def open_dbc_to_excel(self):
+        """Open the Filedialog and selects the dbc file"""
         self.selected_file_path = self.dbcexcellogic.get_dbc_file()
         self.selected_file_label.setText(f"Selected File:\n{self.selected_file_path}")
-
         self.convert_button.setEnabled(True)
 
     def update_mapping(self, alphabet, index):
+        """Updating the column indexes with combo box parameters"""
         data = self.column_name_boxes[alphabet].currentText()
         self.column_mappings[alphabet] = data
 
     def convert_files(self):
+        """Converts the one file into another file, 
+        if file is dbc then converts to the excel or if file is excel then converts to dbc"""
         if self.selected_file_path.endswith(".dbc"):
             try:
                 output_excel_file = self.dbcexcellogic.convert_dbc_to_excel()
                 self.output_label.setText(
-                    f"output: DBC to Excel conversion successful\n {output_excel_file}"
+                    f"DBC to Excel conversion successful\n {output_excel_file}"
                 )
             except Exception as e:
                 self.output_label.setText(f"Cannot convert to excel.\n Error: {e}")
@@ -174,9 +197,10 @@ class DbcWindow(QMainWindow):
                 output_dbc_file = self.dbcexcellogic.process_excel_to_dbc(
                     self.column_mappings
                 )
-                self.output_label.setText(
-                    f"output:Excel to DBC conversion successful\n {output_dbc_file}"
-                )
+                if output_dbc_file is not None:
+                    self.output_label.setText(
+                        f"Excel to DBC conversion successful\n {output_dbc_file}"
+                    )
             except Exception as e:
                 self.output_label.setText(f"Cannot convert to excel.\n Error: {e}")
 
@@ -185,6 +209,7 @@ class DbcWindow(QMainWindow):
 
 
 def run_main():
+    """Runs the main file"""
     app = QApplication(sys.argv)
     window = DbcWindow()
     window.show()
