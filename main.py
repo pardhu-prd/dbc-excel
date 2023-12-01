@@ -1,4 +1,4 @@
-'''Main file'''
+'''Main file for the DBC to Excel'''
 from PyQt5.QtWidgets import QApplication
 from dbcexcelwindow import DbcWindow
 
@@ -11,3 +11,4 @@ def run_app():
 
 if __name__ == "__main__":
     run_app()
+
